@@ -28,30 +28,17 @@ async def scan_coins_job(context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     print(f"Found {len(coins)} coins.")
 
-    loop = asyncio.get_running_loop()
-
-    def check_and_prepare(coin):
+    for coin in coins:
         if Check_Coin(f"{coin}/USDT"):
             price = coin_pirce(f"{coin}/USDT")
             if price:
                 message = f"Coin: {coin}\nPrice: {price}"
                 print(f"Sent message for {coin}: {message}")
-                return message
+                await context.bot.send_message(chat_id=CHAT_ID, text=message)
             else:
                 print(f"Failed to fetch price for {coin}")
         else:
             print(f"Coin {coin} does not meet RSI criteria.")
-        return None
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        results = await loop.run_in_executor(
-            None,
-            lambda: list(executor.map(check_and_prepare, coins))
-        )
-
-    for message in results:
-        if message:
-            await context.bot.send_message(chat_id=CHAT_ID, text=message)
 
     print("Finished processing coins.")
     context.job_queue.run_once(scan_coins_job, when=scan_delay)
